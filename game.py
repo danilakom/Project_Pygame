@@ -184,7 +184,6 @@ else:
 location = locations['out']
 size = width, height = location.get_width(), location.get_height()
 screen = pygame.display.set_mode(size)
-print(size)
 
 for b in brakes_out:
     Brake(*b, breaks_out)

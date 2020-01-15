@@ -9,10 +9,12 @@ size = width, height = 1000, 818
 screen = pygame.display.set_mode(size)
 font = pygame.font.Font('18690.ttf', 36)
 
+
 def load_image(name):
     fullname = os.path.join('textures', name)
     image = pygame.image.load(fullname).convert_alpha()
     return image
+
 
 back = load_image('battle.png')
 screen.blit(back, (0, 0))
@@ -21,6 +23,7 @@ enemy = load_image('skull.png')
 player = load_image('m_stay_d.png')
 HP_group = pygame.sprite.Group()
 persons = pygame.sprite.Group()
+
 
 class Battle:
     def __init__(self, enemy, e_hp, player, d):
@@ -77,19 +80,23 @@ class Battle:
                 return False
 
     def shake(self):
-        clock = pygame.time.Clock()
-        for i in range(3):
-            self.e.rect.x -= 5
-            self.p.rect.x -= 5
-            self.display.flip()
+        def show():
+            screen.blit(back, (0, 0))
+            persons.draw(screen)
+            pygame.display.flip()
+            pygame.time.delay(100)
 
-            self.e.rect.x += 10
-            self.p.rect.x += 10
-            self.display.flip()
+        self.e.rect.x -= 5
+        self.p.rect.x -= 5
+        show()
 
-            self.e.rect.x -= 5
-            self.p.rect.x -= 5
-            self.display.flip()
+        self.e.rect.x += 10
+        self.p.rect.x += 10
+        show()
+
+        self.e.rect.x -= 5
+        self.p.rect.x -= 5
+        show()
     
     def attack(self):
         while self.p_hp < -1:
@@ -132,6 +139,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect = self.rect.move(166, 705)
 
+
 running = True
 fon = True
 do = True
@@ -163,7 +171,7 @@ while running:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == pygame.BUTTON_LEFT:
                     win = battle.get_skill(*event.pos)
-                    if win == True or win == False:
+                    if win is True or win is False:
                         fon = False
     HP_group.draw(screen)
     persons.draw(screen)
