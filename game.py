@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+from random import randint, choice
 
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -8,6 +9,7 @@ pygame.init()
 pygame.display.set_caption('rpg')
 size = width, height = 1262, 654
 screen = pygame.display.set_mode(size)
+font = pygame.font.Font('18690.ttf', 36)
 
 
 def load_image(name):
@@ -24,12 +26,18 @@ locations = {'out': load_image('loc.png'), 'home': load_image('home.png')}
 fon = load_image('fon.png')
 brakes_out = [(207, 52, 147, 284), (354, 121, 52, 215), (406, 45, 111, 273), (460, 28, 26, 17), (517, 45, 59, 264), (576, 45, 104, 273), (680, 136, 87, 182), (767, 136, 48, 91), (815, 34, 137, 375), (366, 369, 37, 34), (411, 363, 35, 46), (88, 227, 45, 45), (0, 0, 134, 90)]
 brakes_in = [(300, 492, 400, 34), (414, 484, 51, 8), (300, 416, 11, 76), (300, 293, 30, 123), (330, 293, 370, 33), (689, 385, 11, 107), (657, 326, 43, 59), (600, 326, 29, 11), (330, 326, 106, 36), (497, 386, 8, 47), (505, 407, 89, 26), (533, 433, 27, 6), (589, 386, 7, 26), (535, 344, 24, 63), (528, 399, 7, 8), (559, 399, 6, 8)]
+farms = [(0, 590, 1000, 280), (0, 554, 727, 36), (765, 498, 235, 92), (0, 91, 206, 137), (134, 448, 44, 106), (225, 446, 44, 108), (590, 497, 137, 57), (952, 0, 48, 498), (0, 228, 45, 215), (354, 45, 52, 75), (134, 0, 326, 44), (134, 44, 72, 47), (487, 0, 465, 34), (680, 34, 134, 102), (487, 34, 193, 10), (460, 0, 27, 28)]
 enemies = {'skeleton': load_image('skeleton.png'), 'skull': load_image('skull.png'), 'slime': load_image('slime.png'), 'ghost': load_image('ghost.png'), 'spider': load_image('spider.png'), 'mid_boss': load_image('med_boss.png'), 'main_boss': load_image('main_boss.png')}
+back = load_image('battle.png')
+hp = {'p': load_image('p_health.png'), 'e': load_image('e_health.png'), 'd': load_image('d_health.png')}
+
 
 player = None
 
 player_group = pygame.sprite.Group()
 enemies_group = pygame.sprite.Group()
+HP_group = pygame.sprite.Group()
+enemy_ter = pygame.sprite.Group()
 breaks_out = pygame.sprite.Group()
 breaks_in = pygame.sprite.Group()
 
@@ -49,6 +57,8 @@ class Anime_Player(pygame.sprite.Sprite):
             self.loc = 'out'
         else:
             self.loc = 'in'
+        self.k = 0
+        self.random()
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, 
@@ -92,6 +102,32 @@ class Anime_Player(pygame.sprite.Sprite):
             if self.dir == 'r':
                 self.x -= 1
                 self.rect.x -= 1
+        if pygame.sprite.spritecollideany(self, enemy_ter):
+            self.k += 1
+            if self.k == self.count:
+                self.k = 0
+                self.random()
+                enemy = choice(list(enemies.keys())[:5])
+                if enemy == 'skeleton':
+                    hpp = 10
+                elif enemy == 'skull':
+                    hpp = 10
+                elif enemy == 'slime':
+                    hpp = 10
+                elif enemy == 'spider':
+                    hpp = 10
+                elif enemy == 'mid_boss':
+                    hpp = 10
+                else:
+                    hpp = 100
+                start_battle(enemies[enemy], player['sd'], hpp)
+                global anim
+                global k
+                anim = False
+                k = 0
+                change(1000, 818)
+        else:
+            self.k = 0
 
     def change(self, sheet, dir, columns, rows):
         self.frames = []
@@ -116,6 +152,9 @@ class Anime_Player(pygame.sprite.Sprite):
                 return True
         return False
     
+    def random(self):
+        self.count = randint(100, 400)
+    
     def change_pos(self, x, y):
         if x == 536 and y == 321:
             self.loc = 'out'
@@ -131,6 +170,182 @@ class Brake(pygame.sprite.Sprite):
         self.image = pygame.Surface((w, h))
         self.rect = self.image.get_rect()
         self.rect = self.rect.move(x, y)
+
+
+class Farm(pygame.sprite.Sprite):
+    def __init__(self, x, y, w, h):
+        super().__init__(enemy_ter)
+        self.image = pygame.Surface((w, h))
+        self.rect = self.image.get_rect()
+        self.rect = self.rect.move(x, y)
+
+class Battle:
+    def __init__(self, enemy, e_hp, player):
+        super().__init__()
+        self.e_hp = e_hp
+        self.p_hp = 20
+        self.e = enemy
+        self.p = player
+        self.skills = {((357, 398), (687, 728)): 'sword', ((405, 446), (687, 728)): 'block', ((402, 443), (687, 728)): 'wind', ((500, 541), (687, 728)): 'fire'}
+        x, y = 162, 686
+        self.p_x, self.p_y = x, y
+        for _ in range(102):
+            HP(hp['p'], x, y)
+            x -= 1
+        
+        x, y = 724, 6
+        self.e_x, self.e_y = x, y
+        for _ in range(102):
+            HP(hp['e'], x, y)
+            x -= 1
+
+    def get_skill(self, x, y):
+        skill = None
+        for x_r, y_r in self.skills.keys():
+            if x in range(x_r[0], x_r[1]) and y in range(y_r[0], y_r[1]):
+                skill = self.skills[(x_r, y_r)]
+        a = True
+        if skill:   
+            if skill == 'sword':
+                p_atk = 5
+                e_atk = randint(0, 10)
+            elif skill == 'block':
+                e_atk = 0
+                p_atk = 0
+                a = False
+            elif skill == 'wind':
+                p_atk = randint(5, 10)
+                e_atk = randint(0, 10)
+            else:
+                p_atk = randint(10, 15)
+                e_atk = randint(0, 10)
+            self.e_hp -= p_atk
+            self.p_hp -= e_atk
+
+            if a:
+                self.shake()
+                self.attack()
+            if self.e_hp <= 0:
+                return True
+            if self.p_hp <= 0:
+                return False
+
+    def shake(self):
+        def show():
+            screen.blit(back, (0, 0))
+            persons.draw(screen)
+            pygame.display.flip()
+            pygame.time.delay(100)
+
+        self.e.rect.x -= 5
+        self.p.rect.x -= 5
+        show()
+
+        self.e.rect.x += 10
+        self.p.rect.x += 10
+        show()
+
+        self.e.rect.x -= 5
+        self.p.rect.x -= 5
+        show()
+    
+    def attack(self):
+        while self.p_hp < -1:
+            self.p_hp += 1
+        while self.e_hp < -1:
+            self.e_hp += 1
+        p_perc = self.p_hp / 102
+        e_perc = self.e_hp / 102
+        p_x = int(102 * p_perc) + 61
+        e_x = int(102 * e_perc) + 623
+        for _ in range(self.p_x - p_x):
+            HP(hp['d'], self.p_x, self.p_y)
+            self.p_x -= 1
+        
+        for _ in range(self.e_x - e_x):
+            HP(hp['d'], self.e_x, self.e_y)
+            self.e_x -= 1
+
+
+class HP(pygame.sprite.Sprite):
+    def __init__(self, image, x, y):
+        super().__init__(HP_group)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect = self.rect.move(x, y)
+
+
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, image):
+        super().__init__(persons)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect = self.rect.move(649, 34)
+
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self, image):
+        super().__init__(persons)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect = self.rect.move(97, 638)
+
+
+def change(w, h):
+    size = width, height = w, h
+    screen = pygame.display.set_mode(size)
+
+
+def start_battle(enemy, player, hpp):
+    change(900, 736)
+    fon = True
+    do = True
+    running = True
+    a = True
+    k = None
+    global persons
+    persons = pygame.sprite.Group()
+    enemy = Enemy(enemy)
+    player = Player(player)
+    battle = Battle(enemy, hpp, player)
+    while running:
+        if fon:
+            screen.blit(back, (0, 0))
+        else:
+            if a:
+                if win:
+                    text = ['Поздравляю с победой!']
+                else:
+                    text = ['Увы вы проиграли.']
+                text_coord = 100
+                for line in text:
+                    string_rendered = font.render(line, 1, pygame.Color('black'))
+                    intro_rect = string_rendered.get_rect()
+                    text_coord += 10
+                    intro_rect.top = text_coord
+                    intro_rect.x = 290
+                    text_coord += intro_rect.height
+                    screen.blit(string_rendered, intro_rect)
+                do = False
+                a = False
+                k = 0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            if do:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == pygame.BUTTON_LEFT:
+                        win = battle.get_skill(*event.pos)
+                        if win is True or win is False:
+                            fon = False
+        if k is not None:
+            k += 1
+        if k and k == 300:
+            anim = False
+            return
+        HP_group.draw(screen)
+        persons.draw(screen)
+        pygame.display.flip()
 
 
 FPS = 60
@@ -190,6 +405,9 @@ for b in brakes_out:
 
 for b in brakes_in:
     Brake(*b, breaks_in)
+
+for f in farms:
+    Farm(*f)
 
 running = True
 anim = False
