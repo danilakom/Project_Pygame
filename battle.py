@@ -5,7 +5,7 @@ from random import randint
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 pygame.init()
 pygame.display.set_caption('battle')
-size = width, height = 1000, 818
+size = width, height = 900, 736
 screen = pygame.display.set_mode(size)
 font = pygame.font.Font('18690.ttf', 36)
 
@@ -26,28 +26,24 @@ persons = pygame.sprite.Group()
 
 
 class Battle:
-    def __init__(self, enemy, e_hp, player, d):
+    def __init__(self, enemy, e_hp, player):
         super().__init__()
         self.e_hp = e_hp
         self.p_hp = 20
         self.e = enemy
         self.p = player
-        self.skills = {((407, 448), (770, 809)): 'sword', ((455, 496), (770, 809)): 'block', ((502, 543), (770, 809)): 'wind', ((550, 591), (770, 809)): 'fire'}
-        self.display = d
-        x, y = 231, 771
+        self.skills = {((357, 398), (687, 728)): 'sword', ((405, 446), (687, 728)): 'block', ((402, 443), (687, 728)): 'wind', ((500, 541), (687, 728)): 'fire'}
+        x, y = 162, 686
+        self.p_x, self.p_y = x, y
         for _ in range(102):
             HP(hp['p'], x, y)
             x -= 1
         
-        x, y = 857, 44
+        x, y = 724, 6
+        self.e_x, self.e_y = x, y
         for _ in range(102):
             HP(hp['e'], x, y)
             x -= 1
-        
-        self.p_x, self.p_y = 231, 771
-        self.e_x, self.e_y = 857, 44
-
-        d.flip()
 
     def get_skill(self, x, y):
         for x_r, y_r in self.skills.keys():
@@ -105,8 +101,8 @@ class Battle:
             self.e_hp += 1
         p_perc = self.p_hp / 102
         e_perc = self.e_hp / 102
-        p_x = int(102 * p_perc) + 130
-        e_x = int(102 * e_perc) + 756
+        p_x = int(102 * p_perc) + 61
+        e_x = int(102 * e_perc) + 623
         for _ in range(self.p_x - p_x):
             HP(hp['d'], self.p_x, self.p_y)
             self.p_x -= 1
@@ -129,7 +125,7 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__(persons)
         self.image = image
         self.rect = self.image.get_rect()
-        self.rect = self.rect.move(771, 61)
+        self.rect = self.rect.move(649, 34)
 
 
 class Player(pygame.sprite.Sprite):
@@ -137,7 +133,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__(persons)
         self.image = image
         self.rect = self.image.get_rect()
-        self.rect = self.rect.move(166, 705)
+        self.rect = self.rect.move(97, 638)
 
 
 running = True
@@ -145,7 +141,7 @@ fon = True
 do = True
 enemy = Enemy(enemy)
 player = Player(player)
-battle = Battle(enemy, 15, player, pygame.display)
+battle = Battle(enemy, 30, player)
 while running:
     if fon:
         screen.blit(back, (0, 0))
@@ -160,7 +156,7 @@ while running:
             intro_rect = string_rendered.get_rect()
             text_coord += 10
             intro_rect.top = text_coord
-            intro_rect.x = 330
+            intro_rect.x = 290
             text_coord += intro_rect.height
             screen.blit(string_rendered, intro_rect)
         do = False
