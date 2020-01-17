@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+import time
 from random import randint, choice
 
 
@@ -29,7 +30,7 @@ brakes_in = [(300, 492, 400, 34), (414, 484, 51, 8), (300, 416, 11, 76), (300, 2
 farms = [(0, 590, 1000, 280), (0, 554, 727, 36), (765, 498, 235, 92), (0, 91, 206, 137), (134, 448, 44, 106), (225, 446, 44, 108), (590, 497, 137, 57), (952, 0, 48, 498), (0, 228, 45, 215), (354, 45, 52, 75), (134, 0, 326, 44), (134, 44, 72, 47), (487, 0, 465, 34), (680, 34, 134, 102), (487, 34, 193, 10), (460, 0, 27, 28)]
 enemies = {'skeleton': load_image('skeleton.png'), 'skull': load_image('skull.png'), 'slime': load_image('slime.png'), 'ghost': load_image('ghost.png'), 'spider': load_image('spider.png'), 'mid_boss': load_image('med_boss.png'), 'main_boss': load_image('main_boss.png')}
 back = load_image('battle.png')
-hp = {'p': load_image('p_health.png'), 'e': load_image('e_health.png'), 'd': load_image('d_health.png')}
+hp = {'p': load_image('p_health.png'), 'e': load_image('e_health.png'), 'd': load_image('d.png'), 'm': load_image('m.png')}
 
 
 player = None
@@ -40,6 +41,7 @@ HP_group = pygame.sprite.Group()
 enemy_ter = pygame.sprite.Group()
 breaks_out = pygame.sprite.Group()
 breaks_in = pygame.sprite.Group()
+number_of_murders = pygame.sprite.Group()
 
 
 class Anime_Player(pygame.sprite.Sprite):
@@ -109,26 +111,31 @@ class Anime_Player(pygame.sprite.Sprite):
                 self.random()
                 enemy = choice(list(enemies.keys())[:5])
                 if enemy == 'skeleton':
-                    hpp = 10
+                    hpp = 20
                 elif enemy == 'skull':
-                    hpp = 10
+                    hpp = 20
                 elif enemy == 'slime':
                     hpp = 10
                 elif enemy == 'spider':
-                    hpp = 10
+                    hpp = 30
                 elif enemy == 'mid_boss':
-                    hpp = 10
-                else:
+                    hpp = 50
+                elif enemy == 'main_boss':
                     hpp = 100
-                start_battle(enemies[enemy], player['sd'], hpp)
+                elif enemy == 'ghost':
+                    hpp = 20
+                if start_battle(enemies[enemy], player['sd'], hpp):
+                    murders.plus()
+                else:
+                    # TODO убийство
+                    pass
                 global anim
                 global k
                 anim = False
                 k = 0
-                change(1000, 818)
         else:
             self.k = 0
-
+    
     def change(self, sheet, dir, columns, rows):
         self.frames = []
         self.cut_sheet(sheet, columns, rows)
@@ -136,7 +143,7 @@ class Anime_Player(pygame.sprite.Sprite):
         self.image = self.frames[self.cur_frame]
         self.dir = dir
         self.rect = self.rect.move(self.x, self.y)
-    
+
     def get_dir(self):
         return self.dir
     
@@ -183,20 +190,27 @@ class Battle:
     def __init__(self, enemy, e_hp, player):
         super().__init__()
         self.e_hp = e_hp
-        self.p_hp = 20
+        self.p_hp = 50
+        self.mp = 100
         self.e = enemy
         self.p = player
-        self.skills = {((357, 398), (687, 728)): 'sword', ((405, 446), (687, 728)): 'block', ((402, 443), (687, 728)): 'wind', ((500, 541), (687, 728)): 'fire'}
-        x, y = 162, 686
+        self.skills = {((408, 633), (609, 650)): 'sword', ((456, 498), (609, 650)): 'block', ((503, 634), (609, 650)): 'wind', ((551, 634), (609, 650)): 'fire'}
+        x, y = 549, 559
         self.p_x, self.p_y = x, y
         for _ in range(102):
             HP(hp['p'], x, y)
             x -= 1
         
-        x, y = 724, 6
+        x, y = 549, 166
         self.e_x, self.e_y = x, y
         for _ in range(102):
             HP(hp['e'], x, y)
+            x -= 1
+        
+        x, y = 549, 583
+        self.m_x, self.m_y = x, y
+        for _ in range(102):
+            HP(hp['m'], x, y)
             x -= 1
 
     def get_skill(self, x, y):
@@ -206,21 +220,31 @@ class Battle:
                 skill = self.skills[(x_r, y_r)]
         a = True
         if skill:   
-            if skill == 'sword':
+            if skill == 'sword' and self.mp >= 5:
                 p_atk = 5
                 e_atk = randint(0, 10)
-            elif skill == 'block':
+                m = 5
+            elif skill == 'block' and self.mp >= 10:
                 e_atk = 0
                 p_atk = 0
                 a = False
-            elif skill == 'wind':
+                m = 10
+            elif skill == 'wind' and self.mp >= 20:
                 p_atk = randint(5, 10)
                 e_atk = randint(0, 10)
-            else:
+                m = 20
+            elif skill == 'fire' and self.mp >= 30:
                 p_atk = randint(10, 15)
                 e_atk = randint(0, 10)
+                m = 30
+            else:
+                a = False
+                p_atk = 0
+                e_atk = 0
+                m = 0
             self.e_hp -= p_atk
             self.p_hp -= e_atk
+            self.mp -= m
 
             if a:
                 self.shake()
@@ -256,8 +280,10 @@ class Battle:
             self.e_hp += 1
         p_perc = self.p_hp / 102
         e_perc = self.e_hp / 102
-        p_x = int(102 * p_perc) + 61
-        e_x = int(102 * e_perc) + 623
+        m_perc = self.mp / 102
+        p_x = int(102 * p_perc) + 448
+        e_x = int(102 * e_perc) + 448
+        m_x = int(102 * m_perc) + 448
         for _ in range(self.p_x - p_x):
             HP(hp['d'], self.p_x, self.p_y)
             self.p_x -= 1
@@ -265,6 +291,20 @@ class Battle:
         for _ in range(self.e_x - e_x):
             HP(hp['d'], self.e_x, self.e_y)
             self.e_x -= 1
+        
+        for _ in range(self.m_x - m_x):
+            HP(hp['d'], self.m_x, self.m_y)
+            self.m_x -= 1
+    
+    def plus(self):
+        if self.mp < 100:
+            self.mp += 1
+            m_perc = self.mp / 102
+            m_x = int(102 * m_perc) + 448
+            for _ in range(m_x - self.m_x):
+                HP(hp['m'], self.m_x, self.m_y)
+                self.m_x += 1
+        pygame.display.flip()
 
 
 class HP(pygame.sprite.Sprite):
@@ -280,7 +320,7 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__(persons)
         self.image = image
         self.rect = self.image.get_rect()
-        self.rect = self.rect.move(649, 34)
+        self.rect = self.rect.move(488, 183)
 
 
 class Player(pygame.sprite.Sprite):
@@ -288,7 +328,38 @@ class Player(pygame.sprite.Sprite):
         super().__init__(persons)
         self.image = image
         self.rect = self.image.get_rect()
-        self.rect = self.rect.move(97, 638)
+        self.rect = self.rect.move(488, 514)
+
+
+class Murders(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(number_of_murders)
+        self.image = pygame.Surface((119, 54))
+        self.image.set_alpha(0)
+        self.image = self.image.convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect = self.rect.move(6, 0)
+        self.count = 0
+        self.font = pygame.font.Font('18690.ttf', 15)
+        self.show()
+    
+    def show(self):
+        text = f'Кол-во убийств: {self.count}'
+        render = self.font.render(text, 1, pygame.Color('black'))
+        self.image = pygame.Surface((119, 54))
+        self.image.set_alpha(0)
+        self.image = self.image.convert_alpha()
+        self.image.blit(render, pygame.Rect(0, 27, 119, 54))
+    
+    def plus(self):
+        self.count += 1
+        if self.count == 10:
+            if start_battle(enemies['mid_boss'], player['sd'], 50): murders.plus()
+            else: pass
+        elif self.count == 30:
+            if start_battle(enemies['main_boss'], player['sd'], 100): murders.plus()
+            else: pass
+        self.show()
 
 
 def change(w, h):
@@ -297,7 +368,6 @@ def change(w, h):
 
 
 def start_battle(enemy, player, hpp):
-    change(900, 736)
     fon = True
     do = True
     running = True
@@ -308,6 +378,7 @@ def start_battle(enemy, player, hpp):
     enemy = Enemy(enemy)
     player = Player(player)
     battle = Battle(enemy, hpp, player)
+    timme = time.time()
     while running:
         if fon:
             screen.blit(back, (0, 0))
@@ -338,11 +409,15 @@ def start_battle(enemy, player, hpp):
                         win = battle.get_skill(*event.pos)
                         if win is True or win is False:
                             fon = False
+        if time.time() - timme >= 0.5:
+            timme = time.time()
+            battle.plus()
         if k is not None:
             k += 1
         if k and k == 300:
             anim = False
-            return
+            if win: return True
+            else: return False
         HP_group.draw(screen)
         persons.draw(screen)
         pygame.display.flip()
@@ -366,15 +441,14 @@ def start_screen():
                   'Нажмите 2, если хотите играть за персонажа женского пола']
 
     screen.blit(fon, (0, 0))
-    font = pygame.font.SysFont('arial', 30)
-    text_coord = 220
+    text_coord = 200
 
     for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
+        string_rendered = font.render(line, 1000, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
-        intro_rect.x = 330
+        intro_rect.x = 200
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
@@ -412,6 +486,7 @@ for f in farms:
 running = True
 anim = False
 loc = 'out'
+murders = Murders()
 
 x, y = 726, 429
 p = Anime_Player(player['u'], 3, 1, player_group, 'u', x, y)
@@ -491,5 +566,6 @@ while running:
         if p and p.get_dir() == 'r':
             p.change(player['sr'], 'r', 1, 1)
     player_group.draw(screen)
+    number_of_murders.draw(screen)
     pygame.display.flip()
 pygame.quit()
