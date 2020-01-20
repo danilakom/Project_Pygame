@@ -127,8 +127,7 @@ class Anime_Player(pygame.sprite.Sprite):
                 if start_battle(enemies[enemy], player['sd'], hpp, enemy):
                     murders.plus()
                 else:
-                    # TODO убийство
-                    pass
+                    game_over()
                 global anim
                 global k
                 anim = False
@@ -404,13 +403,13 @@ def start_battle(enemy, player, hpp, e):
                     text = ['Поздравляю с победой!']
                 else:
                     text = ['Увы вы проиграли.']
-                text_coord = 100
+                text_coord = 320
                 for line in text:
                     string_rendered = font.render(line, 1, pygame.Color('black'))
                     intro_rect = string_rendered.get_rect()
                     text_coord += 10
                     intro_rect.top = text_coord
-                    intro_rect.x = 290
+                    intro_rect.x = 360
                     text_coord += intro_rect.height
                     screen.blit(string_rendered, intro_rect)
                 do = False
@@ -438,6 +437,33 @@ def start_battle(enemy, player, hpp, e):
         persons.draw(screen)
         pygame.display.flip()
 
+
+def game_over():
+    size = width, height = 1262, 654
+    screen = pygame.display.set_mode(size)
+    g = pygame.sprite.Group()
+    over = pygame.sprite.Sprite()
+    over.image = load_image('game_over.png')
+    over.rect = over.image.get_rect()
+    over.rect.x = 0 - over.rect.width
+    g.add(over)
+
+    running = True
+    d = True
+    clock = pygame.time.Clock()
+    v = 200
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+        if d:
+            screen.fill((0, 0, 255))
+            over.rect.x += v * clock.tick() / 1000
+            if over.rect.x + over.rect.width >= width:
+                d = False
+            g.draw(screen)
+        pygame.display.flip()
 
 FPS = 60
 clock = pygame.time.Clock()
