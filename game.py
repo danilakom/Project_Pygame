@@ -91,6 +91,19 @@ class Anime_Player(pygame.sprite.Sprite):
             a = pygame.sprite.spritecollideany(self, breaks_out)
         else:
             a = pygame.sprite.spritecollideany(self, breaks_in)
+        if self.loc == 'in' and (self.x + self.rect.width >= 656 and 293 <= self.y <= 384) or (self.x <= 435 and 293 <= self.y <= 361):
+                if self.dir == 'u':
+                    self.y += 1
+                    self.rect.y += 1
+                if self.dir == 'd':
+                    self.y -= 1
+                    self.rect.y -= 1
+                if self.dir == 'l':
+                    self.x += 1
+                    self.rect.x += 1
+                if self.dir == 'r':
+                    self.x -= 1
+                    self.rect.x -= 1
         if (a and a.rect.y <= self.y + self.rect.h <= a.rect.y + a.rect.h) or self.x < 0 or self.x + self.rect.width > width or self.y < 0 or self.y + self.rect.height > height:
             if self.dir == 'u':
                 self.y += 1
